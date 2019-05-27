@@ -130,6 +130,12 @@ int main(int argc, char **argv)
                     tpm_handle.get_context(), &kh_handle, 
                     &now, &real_otp, false);
 
+        if ((now / 30) == (last_time / 30)) {
+            printf("Only one authentication per interval is allowed.\n"
+                   "Authentication failed.\n");
+        continue;
+        }
+
         printf("user OTP: %" PRIu64 "\n", user_otp);
         printf("real OTP: %" PRIu64 "\n", real_otp);
 

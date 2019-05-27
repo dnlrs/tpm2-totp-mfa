@@ -1,4 +1,4 @@
-# TPM2.0 based TOPT authorization
+# TPM2.0 based TOPT authentication
 
 *NOTE*: **this is not secure software**! It's a proof of concept and its main
 purpose it to test tpm2.0 capabilities.

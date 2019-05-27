@@ -5,11 +5,10 @@
 
 #include "tss2/tss2_esys.h"
 
-constexpr char dummy_psw[16] = "dummy-password";
-
 bool create_nv_space(
     ESYS_CONTEXT *ctx,
-    ESYS_TR      *nv_handle);
+    ESYS_TR      *nv_handle,
+    ESYS_TR      *kh_handle);
 
 bool delete_nv_space(
     ESYS_CONTEXT *ctx,

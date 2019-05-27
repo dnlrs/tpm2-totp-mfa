@@ -36,6 +36,8 @@ bool  calculate_topt(
          | ((uint32_t)out_hmac->buffer[offset+3] & 0xff);
     *otp %= (1000000);
 
-    *time_value = now / TIMESTEPSIZE;
+    if (!use_time_value)
+        *time_value = now;
+    
     return true;
 }

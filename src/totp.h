@@ -13,8 +13,7 @@
 #define TIMESTEPSIZE 30
 #define SECRETLEN    20
 
-
-bool  calculate_topt(
+bool calculate_topt(
     ESYS_CONTEXT *ctx,
     ESYS_TR      *kh_handle,
     time_t       *time_value,

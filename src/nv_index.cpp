@@ -9,7 +9,8 @@
 
 bool create_nv_space(
     ESYS_CONTEXT *ctx,
-    ESYS_TR      *nv_handle)
+    ESYS_TR      *nv_handle,
+    ESYS_TR      *kh_handle)
 {   
     ESYS_TR policy_session = ESYS_TR_NONE;
     if (!nv_create_admin_policy(ctx, &policy_session)) {
@@ -34,9 +35,13 @@ bool create_nv_space(
         TPM2B_AUTH      auth_value  = {};
         TPM2B_NV_PUBLIC public_info = {};
 
-        // init command parameters
-        auth_value.size = strlen(dummy_psw);
-        memcpy(&auth_value.buffer[0], dummy_psw, auth_value.size);
+        time_t initial_time = 0;
+        uint64_t first_otp  = 0;
+        if (!calculate_topt(ctx, kh_handle, &initial_time, &first_otp, true))
+            return false;
+
+        auth_value.size = sizeof(first_otp);
+        memcpy(&auth_value.buffer[0], (void*) &first_otp, auth_value.size);
 
         public_info.nvPublic.nvIndex    = 0x018094AB; // random handle from owner space
         public_info.nvPublic.nameAlg    = TPM2_ALG_SHA256;
@@ -104,34 +109,21 @@ bool nv_update_authValue(
     /*
         Calculate current NV index authValue and the new one.
     */
-    bool rs = false;
-    if (*last_updated == 0) {
-        // it's the first time updating the NV index authValue
-        old_auth.size = sizeof(dummy_psw);
-        memcpy(&old_auth.buffer[0], dummy_psw, old_auth.size);
-    } else {
-        // the current NV index authValue is the last OTP value used
-        if (!calculate_topt(ctx, kh_handle, last_updated, &old_otp, true)) {
-            return false;
-        }
-        
-        old_auth.size = sizeof(old_otp);
-        memcpy(&old_auth.buffer[0], (void*) &old_otp, old_auth.size);
-    }
-
-    if (!calculate_topt(ctx, kh_handle, &time_value, &new_otp)) {
+    if (!calculate_topt(ctx, kh_handle, last_updated, &old_otp, true)) {
         return false;
     }
+    old_auth.size = sizeof(old_otp);
+    memcpy(&old_auth.buffer[0], (void*) &old_otp, old_auth.size);
 
-    // debug
-    printf("new otp: %lu\n", new_otp);
+    if (!calculate_topt(ctx, kh_handle, &time_value, &new_otp, false)) {
+        return false;
+    }
+    new_auth.size = sizeof(new_otp);
+    memcpy(&new_auth.buffer[0], (void*) &new_otp, new_auth.size);
 
     /*
         Change NV authValue with new calculated OTP.
     */
-    new_auth.size = sizeof(new_otp);
-    memcpy(&new_auth.buffer[0], (void*) &new_otp, new_auth.size);
-
     ESYS_TR policy_session = ESYS_TR_NONE;
     TSS2_RC rc             = TSS2_RC_SUCCESS;
     try {

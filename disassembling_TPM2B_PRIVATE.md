@@ -6,6 +6,7 @@
 
 unpacks into:
 
+```
 TPM2B_PRIVATE {
     .size = 005e
     .buffer = TPM2B_SENSITIVE {
@@ -27,3 +28,4 @@ TPM2B_PRIVATE {
             }
         }
     }
+```

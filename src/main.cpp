@@ -13,16 +13,15 @@
 #include "sym_key.h"
 #include "totp.h"
 
-
 /*
     Steps:
       1. Initialize tpm connection
       2. Create primary key
-      3. Create keyedhash key (anche show it once for sync)
+      3. Create keyedhash key (and show it once for sync with app)
       4. Create NV Ram with initial dummy password
       5. Create symkey policy (password + NVRam password)
       6. Create symkey with policy
-      7. encrypt "Hello, policy." with symkey
+      7. encrypt secret message with symkey
       8. loop: when user asks, change nv password and try to decrypt data
 */
 int main(int argc, char **argv)
@@ -49,7 +48,8 @@ int main(int argc, char **argv)
     TPM2B_PUBLIC  *sk_public  = nullptr;
 
     // topt related
-    time_t last_time = 0;
+    time_t   last_time = 0;
+    uint64_t first_otp = 0;
 
     printf("Creating primary key...\n");
     bool rval = create_primary(
@@ -70,7 +70,17 @@ int main(int argc, char **argv)
         goto finish;
 
     printf("Creating NV space...\n");
-    rval = create_nv_space(tpm_handle.get_context(), &nv_handle);
+    rval = create_nv_space(
+                tpm_handle.get_context(), 
+                &nv_handle, &kh_handle);
+    if (!rval)
+        goto finish;
+
+
+    rval = calculate_topt(
+                tpm_handle.get_context(), 
+                &kh_handle, &last_time, 
+                &first_otp, true);
     if (!rval)
         goto finish;
 
@@ -78,7 +88,7 @@ int main(int argc, char **argv)
     rval = create_policy(
                 tpm_handle.get_context(), 
                 nv_handle, 
-                &dummy_psw[0], sizeof(dummy_psw),
+                (char*)&first_otp, sizeof(first_otp),
                 &sk_policy);
      if (!rval)
         goto finish;
@@ -94,7 +104,7 @@ int main(int argc, char **argv)
     printf("Encrypting secret message...\n");
     rval = encryptdecrypt_message(
                 tpm_handle.get_context(), nv_handle, 
-                &dummy_psw[0], sizeof(dummy_psw), 
+                (char*)&first_otp, sizeof(first_otp),
                 sk_handle, false);
     if (!rval)
         goto finish;
@@ -102,7 +112,7 @@ int main(int argc, char **argv)
     printf("Decrypting secret message...\n");
     rval = encryptdecrypt_message(
                 tpm_handle.get_context(), nv_handle, 
-                &dummy_psw[0], sizeof(dummy_psw), 
+                (char*)&first_otp, sizeof(first_otp),
                 sk_handle, true);
     if (!rval)
         goto finish;
@@ -135,8 +145,9 @@ int main(int argc, char **argv)
                     nv_handle, (char*) 
                     &user_otp, (int) sizeof(user_otp), 
                     sk_handle, true);
-        if (!rval)
-            goto finish;
+        if (!rval) {
+            printf("Authorization failed.\n");
+        }
     }
 
 

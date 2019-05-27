@@ -14,3 +14,15 @@ imported in the tpm.
 This software uses policies to implement 2-factor authentication (a
 *hardcoded* password and an OTP) in order to allow the user to decrypt a
 secret message using a tpm-protected symmetric key.
+
+## Build
+
+```sh
+cmake --build ./build --config Debug --target all -- -j$(nproc)
+```
+
+## Run
+
+```sh
+./build/tpm_policies
+```

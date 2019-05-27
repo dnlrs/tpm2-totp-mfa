@@ -1,0 +1,10 @@
+
+# reference folders
+openssl
+tpm2-tss
+
+
+# vs-code files and build fodler
+.vscode
+*.code-workspace
+build
